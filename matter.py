@@ -142,14 +142,12 @@ def read_cleaned_grub_defaults():
     with open(GRUB_DEFAULTS_PATH, "r", newline="") as f:
         grub_defaults = f.read()
 
-    # Remove previous theme defaults
-    cleaned_grub_defaults = re.sub(
+    return re.sub(
         f"\n*{BEGIN_THEME_OVERRIDES}.*{END_THEME_OVERRIDES}\n*",
         "",
         grub_defaults,
         flags=re.DOTALL,
     )
-    return cleaned_grub_defaults
 
 
 def read_cleaned_grub_mkconfig():
@@ -157,14 +155,12 @@ def read_cleaned_grub_mkconfig():
     with open(GRUB_MKCONFIG_PATH, "r", newline="") as f:
         grub_mkconfig = f.read()
 
-    # Remove previous theme defaults
-    cleaned_grub_mkconfig = re.sub(
+    return re.sub(
         f"\n*{BEGIN_THEME_OVERRIDES}.*{END_THEME_OVERRIDES}\n*",
         "",
         grub_mkconfig,
         flags=re.DOTALL,
     )
-    return cleaned_grub_mkconfig
 
 
 def download_icon(icon_name):
@@ -186,8 +182,8 @@ def download_icon(icon_name):
 def download_background(background_path):
     if not has_PIL:
         error("PIL not detected, cannot download background")
-    info(f"Downloading background image")
-    
+    info("Downloading background image")
+
     url = f"{background_path}"
     try:
         with request.urlopen(url) as f:
@@ -220,17 +216,16 @@ def is_icon_downloaded(icon_name):
 
 
 def convert_icon_svg2png(icon_name, whisper=False):
-    if not has_command("inkscape"):
-        if not has_command("convert"):
-            error(
-                "Stop. Both `inkscape` and `convert` command from imagemagick were not found",
-                "Consider installing `inkscape` for the best results",
-            )
-        else:
-            command = "convert"
-    else:
+    if has_command("inkscape"):
         command = "inkscape"
 
+    elif not has_command("convert"):
+        error(
+            "Stop. Both `inkscape` and `convert` command from imagemagick were not found",
+            "Consider installing `inkscape` for the best results",
+        )
+    else:
+        command = "convert"
     color = (
         parse_color(user_args.iconcolor)
         if user_args.iconcolor
@@ -352,7 +347,7 @@ def prepare_source_dir():
     # grub-mkfont present
     grub_mkfont = which("grub-mkfont") or which("grub2-mkfont")
     if grub_mkfont is None:
-        error(f"grub-mkfont command not found in your system (grub2-mkfont neither)")
+        error("grub-mkfont command not found in your system (grub2-mkfont neither)")
     # Valid font arguments
     if fontfile is None:  # User did not specify custom font file
         fontfile = f"{INSTALLER_DIR}/fonts/{fontkey}.ttf"
@@ -391,10 +386,9 @@ def prepare_source_dir():
 
     # Generate font file
     info("Build font")
-    stdout = shout(
+    if stdout := shout(
         f"{grub_mkfont} -o {INSTALLATION_SOURCE_DIR}/font.pf2 {fontfile} -s {fontsize}"
-    )
-    if stdout:
+    ):
         error(
             f"{grub_mkfont} execution was not clean", f"for fontfile: {fontfile}",
         )
@@ -440,7 +434,7 @@ def update_grub_cfg():
     )
     if update_command is None:
         error(
-            f"Command for generating grub.cfg not found (tried update-grub, grub-mkconfig and grub2-mkconfig)"
+            "Command for generating grub.cfg not found (tried update-grub, grub-mkconfig and grub2-mkconfig)"
         )
     command = f"{update_command} -o {GRUB_CFG_PATH}"
     info(f"Remake grub.cfg with {command}")
@@ -499,8 +493,7 @@ def get_entry_names():
         r"(?P<tail>[^\{]*\{)"  # The rest of the entry header until a { is found
     )
     matchiter = re.finditer(pattern, grub_cfg)
-    matches = list(matchiter)
-    return matches
+    return list(matchiter)
 
 
 # Main procedures
@@ -699,7 +692,7 @@ def do_set_icons(patch_grubcfg):
 
 
 def install_hookcheck():
-    info(f"Create hook check script")
+    info("Create hook check script")
     with open(HOOKCHECK_TEMPLATE_PATH, "r", newline="") as f:
         template = f.read()
 
@@ -743,38 +736,38 @@ def parse_args():
         formatter_class=RawTextHelpFormatter,
     )
     parser.add_argument(
-        "--listentries", "-l", action="store_true", help=f"list grub entries",
+        "--listentries", "-l", action="store_true", help="list grub entries"
     )
     parser.add_argument(
         "--buildonly",
         "-b",
         action="store_true",
-        help=f"prepare the theme but do not install it",
+        help="prepare the theme but do not install it",
     )
     parser.add_argument(
         "--test",
         "-t",
         action="store_true",
-        help=f"test the generated theme with grub2-theme-preview",
+        help="test the generated theme with grub2-theme-preview",
     )
     parser.add_argument(
         "--icons",
         "-i",
         type=str,
         nargs="*",
-        help=f"specify icons for each grub entry listed with -l",
+        help="specify icons for each grub entry listed with -l",
     )
     parser.add_argument(
         "--seticons",
         "-si",
         action="store_true",
-        help=f"set grub entries icons given by -i and patch grub-mkconfig for persistence",
+        help="set grub entries icons given by -i and patch grub-mkconfig for persistence",
     )
     parser.add_argument(
         "--seticons_once",
         "-so",
         action="store_true",
-        help=f"set grub entries icons given by -i, will be reverted on next grub update",
+        help="set grub entries icons given by -i, will be reverted on next grub update",
     )
     parser.add_argument(
         "--uninstall", "-u", action="store_true", help=f"uninstall {THEME_NAME}",
@@ -783,59 +776,61 @@ def parse_args():
         "--highlight",
         "-hl",
         type=str,
-        help=f"selected text color",
+        help="selected text color",
         default=THEME_DEFAULT_HIGHLIGHT,
     )
     parser.add_argument(
         "--foreground",
         "-fg",
         type=str,
-        help=f"main text color",
+        help="main text color",
         default=THEME_DEFAULT_FOREGROUND,
     )
     parser.add_argument(
         "--background",
         "-bg",
         type=str,
-        help=f"solid background color",
+        help="solid background color",
         default=None,
-        # default will be set to THEME_DEFAULT_BACKGROUND
     )
     parser.add_argument(
         "--image",
         "-im",
         type=str,
-        help=f"image file to use as background, supported extensions: PNG, JPG, JPEG, TGA",
+        help="image file to use as background, supported extensions: PNG, JPG, JPEG, TGA",
     )
     parser.add_argument(
         "--iconcolor",
         "-ic",
         type=str,
-        help=f"icons fill color, by default same as foreground",
+        help="icons fill color, by default same as foreground",
     )
     parser.add_argument(
         "--font",
         "-f",
         type=str,
-        help=f"theme font from already downloaded fonts",
+        help="theme font from already downloaded fonts",
         default=THEME_DEFAULT_FONT,
         choices=get_available_fonts(),
     )
     parser.add_argument(
-        "--fontfile", "-ff", type=str, help=f"import theme font from custom .ttf file"
+        "--fontfile",
+        "-ff",
+        type=str,
+        help="import theme font from custom .ttf file",
     )
     parser.add_argument(
         "--fontname",
         "-fn",
         type=str,
         nargs="*",
-        help=f"specify the font name for the given font file",
+        help="specify the font name for the given font file",
     )
     parser.add_argument(
         "--fontsize",
         "-fs",
         type=int,
-        help=f"theme font size",
+        help="theme font size",
         default=THEME_DEFAULT_FONT_SIZE,
     )
     parser.add_argument(
@@ -848,7 +843,7 @@ def parse_args():
         "--downloadbackground",
         "-dlbg",
         type=str,
-        help=f"download the background image from the given url",
+        help="download the background image from the given url",
     )
     return parser.parse_args()
 
